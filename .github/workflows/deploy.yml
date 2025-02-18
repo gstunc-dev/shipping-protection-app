@@ -30,7 +30,7 @@ jobs:
       - name: Transfer Files to Server Using Rsync
         run: |
           rsync -avz --exclude=node_modules --exclude=build --exclude=.git --delete \
-          -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/remix-app
+          -e "ssh -o StrictHostKeyChecking=yes" ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/remix-app
 
   deploy:
     runs-on: ubuntu-latest
