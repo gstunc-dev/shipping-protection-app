@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 21  # Using latest stable version greater than 20
 
       - name: Install dependencies
         run: npm install
@@ -24,14 +24,20 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      - name: Debug Docker Credentials (Masked)
+        run: |
+          echo "::add-mask::${{ secrets.DOCKER_PASSWORD }}"
+          echo "Docker Username: ${{ secrets.DOCKER_USERNAME }}"
+          echo "Docker Password is masked for security."
+
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
         run: |
           docker build -t my-shopify-app .
-          docker tag my-shopify-app mydockerhubusername/my-shopify-app:latest
-          docker push mydockerhubusername/my-shopify-app:latest
+          docker tag my-shopify-app "${{ secrets.DOCKER_USERNAME }}"/my-shopify-app:latest
+          docker push "${{ secrets.DOCKER_USERNAME }}"/my-shopify-app:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -45,8 +51,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull mydockerhubusername/my-shopify-app:latest
+            echo "Pulling latest Docker image..."
+            docker pull "${{ secrets.DOCKER_USERNAME }}"/my-shopify-app:latest
             docker stop remix-app || true
             docker rm remix-app || true
-            docker run -d --name remix-app -p 3000:3000 mydockerhubusername/my-shopify-app:latest
-
+            echo "Running new container..."
+            docker run -d --name remix-app -p 3000:3000 "${{ secrets.DOCKER_USERNAME }}"/my-shopify-app:latest
