@@ -33,7 +33,9 @@ jobs:
 
       - name: Test SSH Connection
         run: |
-          ssh -o StrictHostKeyChecking=no -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+          chmod 600 ssh_key
+          ssh -o StrictHostKeyChecking=no -i ssh_key \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo 'SSH Connection Successful'"
 
       - name: Create Deployment Archive
@@ -42,7 +44,9 @@ jobs:
 
       - name: Transfer Files to Server Using SCP
         run: |
-          scp -o StrictHostKeyChecking=no -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+          chmod 600 ssh_key
+          scp -o StrictHostKeyChecking=no -i ssh_key \
           remix-app.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/
 
   deploy:
