@@ -24,9 +24,6 @@ jobs:
       - name: Build the app
         run: npm run build
 
-      - name: Install Rsync on Runner
-        run: sudo apt-get update && sudo apt-get install -y rsync
-
       - name: Debug Secrets (Safe Logging)
         run: |
           echo "Checking if secrets are loaded..."
@@ -39,11 +36,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo 'SSH Connection Successful'"
 
-      - name: Transfer Files to Server Using Rsync
+      - name: Create Deployment Archive
         run: |
-          rsync -avz --exclude=node_modules --exclude=build --exclude=.git --delete \
-          -e "ssh -o StrictHostKeyChecking=no -i <(echo '${{ secrets.SSH_PRIVATE_KEY }}')" \
-          ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/remix-app
+          tar -czf remix-app.tar.gz --exclude=node_modules --exclude=.git --exclude=build .
+
+      - name: Transfer Files to Server Using SCP
+        run: |
+          scp -o StrictHostKeyChecking=no -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+          remix-app.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/
 
   deploy:
     runs-on: ubuntu-latest
@@ -58,11 +58,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "Starting Deployment on Server..."
-            
-            cd ~/remix-app
 
-            echo "Pulling latest code..."
-            git pull origin main || true
+            cd ~
+
+            echo "Extracting deployment files..."
+            tar -xzf remix-app.tar.gz -C ~/remix-app
+
+            cd ~/remix-app
 
             echo "Stopping old container..."
             docker stop remix-app || true
