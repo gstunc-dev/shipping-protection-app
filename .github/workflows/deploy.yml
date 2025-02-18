@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 21  # Using latest stable version greater than 20
+          node-version: 21
 
       - name: Install dependencies
         run: npm install
@@ -24,20 +24,17 @@ jobs:
       - name: Build the app
         run: npm run build
 
-      - name: Debug Docker Credentials (Masked)
-        run: |
-          echo "::add-mask::${{ secrets.DOCKER_PASSWORD }}"
-          echo "Docker Username: ${{ secrets.DOCKER_USERNAME }}"
-          echo "Docker Password is masked for security."
+      - name: Archive App for Deployment
+        run: tar -czf remix-app.tar.gz .
 
-      - name: Log in to Docker Hub
-        run: echo "P@$w0rd@gstunc" | docker login -u "gstuncdev" --password-stdin
-
-      - name: Build and push Docker image
-        run: |
-          docker build -t my-shopify-app .
-          docker tag my-shopify-app "gstuncdev"/my-shopify-app:latest
-          docker push "gstuncdev"/my-shopify-app:latest
+      - name: Transfer App to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "remix-app.tar.gz"
+          target: "~/"
 
   deploy:
     runs-on: ubuntu-latest
@@ -51,9 +48,16 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Pulling latest Docker image..."
-            docker pull "gstuncdev"/my-shopify-app:latest
+            echo "Stopping existing container..."
             docker stop remix-app || true
             docker rm remix-app || true
+
+            echo "Extracting new build..."
+            tar -xzf ~/remix-app.tar.gz -C ~/remix-app
+            cd ~/remix-app
+
+            echo "Building new Docker image..."
+            docker build -t remix-app .
+
             echo "Running new container..."
-            docker run -d --name remix-app -p 3000:3000 "gstuncdev"/my-shopify-app:latest
+            docker run -d --name remix-app -p 3000:3000 remix-app
