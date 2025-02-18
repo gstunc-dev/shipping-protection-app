@@ -27,10 +27,23 @@ jobs:
       - name: Install Rsync on Runner
         run: sudo apt-get update && sudo apt-get install -y rsync
 
+      - name: Debug Secrets (Safe Logging)
+        run: |
+          echo "Checking if secrets are loaded..."
+          echo "SERVER_HOST: ${{ secrets.SERVER_HOST }}"
+          echo "SERVER_USER: ${{ secrets.SERVER_USER }}"
+          echo "SSH Key Length: $(echo '${{ secrets.SSH_PRIVATE_KEY }}' | wc -c | tr -d ' ') characters"
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo 'SSH Connection Successful'"
+
       - name: Transfer Files to Server Using Rsync
         run: |
           rsync -avz --exclude=node_modules --exclude=build --exclude=.git --delete \
-          -e "ssh -o StrictHostKeyChecking=yes" ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/remix-app
+          -e "ssh -o StrictHostKeyChecking=no -i <(echo '${{ secrets.SSH_PRIVATE_KEY }}')" \
+          ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/remix-app
 
   deploy:
     runs-on: ubuntu-latest
@@ -45,8 +58,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "Starting Deployment on Server..."
-
+            
             cd ~/remix-app
+
+            echo "Pulling latest code..."
+            git pull origin main || true
 
             echo "Stopping old container..."
             docker stop remix-app || true
@@ -56,6 +72,6 @@ jobs:
             docker build -t remix-app .
 
             echo "Running new container..."
-            docker run -d --name remix-app -p 3000:3000 remix-app
+            docker run -d --restart always --name remix-app -p 3000:3000 remix-app
 
             echo "Deployment Successful!"
