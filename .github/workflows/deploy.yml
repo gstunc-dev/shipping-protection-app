@@ -56,7 +56,7 @@ jobs:
     needs: build
 
     steps:
-      - name: SSH into Server and Deploy
+      - name: SSH into Server, Deploy App, and Configure SSL
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -83,5 +83,23 @@ jobs:
             echo "🛠️ Rebuilding and Restarting all services..."
             docker compose up -d --build --remove-orphans
 
-            echo "✅ Deployment Successful!"
+            echo "🔍 Checking if SSL is already installed for Nginx..."
+            if [ ! -f /etc/letsencrypt/live/gstunc.live/fullchain.pem ]; then
+              echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
+              
+              # Install Certbot if not installed
+              sudo apt update
+              sudo apt install -y certbot python3-certbot-nginx
 
+              # Generate SSL certificate
+              sudo certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
+
+              echo "✅ SSL certificate successfully generated!"
+            else
+              echo "✅ SSL certificate already exists. Skipping generation."
+            fi
+
+            echo "🔄 Restarting Nginx to apply changes..."
+            sudo systemctl restart nginx
+
+            echo "✅ Deployment & SSL Setup Successful!"
