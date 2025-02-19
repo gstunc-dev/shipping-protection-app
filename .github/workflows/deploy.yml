@@ -121,6 +121,17 @@ jobs:
             if [ $? -eq 0 ]; then
               echo "✅ Nginx configuration is valid. Restarting..."
               echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl restart nginx
+
+              if [ $? -ne 0 ]; then
+                echo "❌ Nginx failed to restart! Fetching logs..."
+                echo "🔍 Checking systemctl logs:"
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl status nginx --no-pager
+
+                echo "🔍 Checking journalctl logs:"
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S journalctl -xe --no-pager | tail -n 50
+
+                exit 1
+              fi
             else
               echo "❌ Nginx configuration has errors. Fix required!"
               exit 1
