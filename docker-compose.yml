@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   web:
-    image: mydockerhubusername/my-shopify-app:latest  # Pull latest image
+    image: remix-app:latest  # Pull latest image
     ports:
       - "3000:3000"
     env_file:
