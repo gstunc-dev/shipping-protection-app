@@ -56,33 +56,30 @@ jobs:
     needs: build
 
     steps:
-    - name: SSH into Server and Deploy
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          echo "🚀 Starting Deployment on Server..."
+      - name: SSH into Server and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Starting Deployment on Server..."
 
-          cd ~
+            cd ~/remix-app
 
-          echo "📂 Ensuring deployment directory exists..."
-          mkdir -p ~/remix-app
+            echo "🛑 Stopping existing containers..."
+            docker-compose down
 
-          cd ~/remix-app
+            echo "📦 Pulling latest image (if using Docker Hub)..."
+            docker pull mydockerhubusername/my-shopify-app:latest || true
 
-          echo "🛑 Stopping existing containers..."
-          docker compose down
+            echo "📂 Extracting deployment files..."
+            tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
 
-          echo "📂 Extracting deployment files..."
-          tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
+            echo "🛠️ Building new Docker containers..."
+            docker-compose build
 
-          echo "🛠️ Building new Docker containers..."
-          docker compose build
+            echo "🚀 Starting the application with Docker Compose..."
+            docker-compose up -d --remove-orphans
 
-          echo "🚀 Starting the application..."
-          docker compose up -d
-
-          echo "✅ Deployment Successful!"
-
+            echo "✅ Deployment Successful!"
