@@ -73,16 +73,16 @@ jobs:
           cd ~/remix-app
 
           echo "🛑 Stopping existing containers..."
-          docker-compose down
+          docker compose down
 
           echo "📂 Extracting deployment files..."
           tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
 
           echo "🛠️ Building new Docker containers..."
-          docker-compose build
+          docker compose build
 
           echo "🚀 Starting the application..."
-          docker-compose up -d
+          docker compose up -d
 
           echo "✅ Deployment Successful!"
 
