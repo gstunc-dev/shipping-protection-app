@@ -44,7 +44,6 @@ jobs:
           rsync -a --exclude=node_modules --exclude=.git --exclude=build ./ temp_deploy/
           tar -czf remix-app.tar.gz -C temp_deploy .
 
-
       - name: Transfer Files to Server Using SCP
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
@@ -68,8 +67,11 @@ jobs:
 
             cd ~
 
+            echo "Ensuring deployment directory exists..."
+            mkdir -p ~/remix-app
+
             echo "Extracting deployment files..."
-            tar -xzf remix-app.tar.gz -C ~/remix-app
+            tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
 
             cd ~/remix-app
 
