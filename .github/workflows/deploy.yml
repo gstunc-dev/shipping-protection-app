@@ -88,8 +88,8 @@ jobs:
               echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
               
               # Install Certbot if not installed
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt update
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt install -y certbot python3-certbot-nginx
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S yum update
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S yum install -y certbot python3-certbot-nginx
 
               # Generate SSL certificate
               echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
