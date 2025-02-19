@@ -68,18 +68,15 @@ jobs:
             cd ~/remix-app
 
             echo "🛑 Stopping existing containers..."
-            docker-compose down
-
-            echo "📦 Pulling latest image (if using Docker Hub)..."
-            docker pull mydockerhubusername/my-shopify-app:latest || true
+            docker compose down
 
             echo "📂 Extracting deployment files..."
             tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
 
             echo "🛠️ Building new Docker containers..."
-            docker-compose build
+            docker compose build
 
             echo "🚀 Starting the application with Docker Compose..."
-            docker-compose up -d --remove-orphans
+            docker compose up -d --remove-orphans
 
             echo "✅ Deployment Successful!"
