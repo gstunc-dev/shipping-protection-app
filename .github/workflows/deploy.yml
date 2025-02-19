@@ -56,33 +56,33 @@ jobs:
     needs: build
 
     steps:
-      - name: SSH into Server and Deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "Starting Deployment on Server..."
+    - name: SSH into Server and Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "🚀 Starting Deployment on Server..."
 
-            cd ~
+          cd ~
 
-            echo "Ensuring deployment directory exists..."
-            mkdir -p ~/remix-app
+          echo "📂 Ensuring deployment directory exists..."
+          mkdir -p ~/remix-app
 
-            echo "Extracting deployment files..."
-            tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
+          cd ~/remix-app
 
-            cd ~/remix-app
+          echo "🛑 Stopping existing containers..."
+          docker-compose down
 
-            echo "Stopping old container..."
-            docker stop remix-app || true
-            docker rm remix-app || true
+          echo "📂 Extracting deployment files..."
+          tar -xzf remix-app.tar.gz -C ~/remix-app --strip-components=1
 
-            echo "Building new Docker image..."
-            docker build -t remix-app .
+          echo "🛠️ Building new Docker containers..."
+          docker-compose build
 
-            echo "Running new container..."
-            docker run -d --restart always --name remix-app -p 3000:3000 remix-app
+          echo "🚀 Starting the application..."
+          docker-compose up -d
 
-            echo "Deployment Successful!"
+          echo "✅ Deployment Successful!"
+
