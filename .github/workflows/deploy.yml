@@ -72,7 +72,7 @@ jobs:
             cd ~/remix-app
 
             echo "🛑 Stopping existing containers..."
-            docker compose down --remove-orphans
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose down --remove-orphans
 
             echo "📂 Removing old files (if any)..."
             rm -rf ~/remix-app/*
@@ -81,18 +81,18 @@ jobs:
             tar -xzf ~/remix-app.tar.gz -C ~/remix-app --strip-components=1
 
             echo "🛠️ Rebuilding and Restarting all services..."
-            docker compose up -d --build --remove-orphans
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose up -d --build --remove-orphans
 
             echo "🔍 Checking if SSL is already installed for Nginx..."
             if [ ! -f /etc/letsencrypt/live/gstunc.live/fullchain.pem ]; then
               echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
               
               # Install Certbot if not installed
-              sudo apt update
-              sudo apt install -y certbot python3-certbot-nginx
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt update
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt install -y certbot python3-certbot-nginx
 
               # Generate SSL certificate
-              sudo certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
 
               echo "✅ SSL certificate successfully generated!"
             else
@@ -100,6 +100,6 @@ jobs:
             fi
 
             echo "🔄 Restarting Nginx to apply changes..."
-            sudo systemctl restart nginx
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl restart nginx
 
             echo "✅ Deployment & SSL Setup Successful!"
