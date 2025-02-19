@@ -56,68 +56,78 @@ jobs:
     needs: build
 
     steps:
-        - name: SSH into Server, Deploy App, and Configure SSL
-          uses: appleboy/ssh-action@master
-          with:
-            host: ${{ secrets.SERVER_HOST }}
-            username: ${{ secrets.SERVER_USER }}
-            key: ${{ secrets.SSH_PRIVATE_KEY }}
-            script: |
-              echo "🚀 Starting Deployment on Server..."
+      - name: SSH into Server, Deploy App, and Configure SSL
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Starting Deployment on Server..."
 
-              echo "📂 Ensuring the deployment directory exists..."
-              mkdir -p ~/remix-app
+            echo "📂 Ensuring the deployment directory exists..."
+            mkdir -p ~/remix-app
 
-              echo "🔄 Navigating to the deployment directory..."
-              cd ~/remix-app
+            echo "🔄 Navigating to the deployment directory..."
+            cd ~/remix-app
 
-              echo "🛑 Stopping existing containers..."
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose down --remove-orphans
+            echo "🛑 Stopping existing containers..."
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose down --remove-orphans
 
-              echo "📂 Removing old files (if any)..."
-              rm -rf ~/remix-app/*
+            echo "📂 Removing old files (if any)..."
+            rm -rf ~/remix-app/*
 
-              echo "📦 Extracting new deployment files into ~/remix-app..."
-              tar -xzf ~/remix-app.tar.gz -C ~/remix-app --strip-components=1
+            echo "📦 Extracting new deployment files into ~/remix-app..."
+            tar -xzf ~/remix-app.tar.gz -C ~/remix-app --strip-components=1
 
-              echo "🛠️ Rebuilding and Restarting all services..."
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose up -d --build --remove-orphans
+            echo "🛠️ Rebuilding and Restarting all services..."
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S docker compose up -d --build --remove-orphans
 
-              echo "🔍 Checking if SSL is already installed for Nginx..."
-              if [ ! -f /etc/letsencrypt/live/gstunc.live/fullchain.pem ]; then
-                echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
+            echo "🔍 Checking if SSL is already installed for Nginx..."
+            if [ ! -f /etc/letsencrypt/live/gstunc.live/fullchain.pem ]; then
+              echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
 
-                # Install Certbot based on OS
-                if [ -f /etc/debian_version ]; then
-                  echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt update
-                  echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt install -y certbot python3-certbot-nginx
-                elif [ -f /etc/redhat-release ]; then
-                  echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S dnf install -y epel-release
-                  echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S dnf install -y certbot python3-certbot-nginx
-                elif [ -f /etc/alpine-release ]; then
-                  echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apk add certbot certbot-nginx
-                else
-                  echo "❌ Unsupported OS. Certbot installation failed."
-                  exit 1
-                fi
-
-                # Generate SSL certificate
-                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
-
-                echo "✅ SSL certificate successfully generated!"
+              # Install Certbot based on OS
+              if [ -f /etc/debian_version ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt update
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt install -y certbot python3-certbot-nginx
+              elif [ -f /etc/redhat-release ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S dnf install -y epel-release
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S dnf install -y certbot python3-certbot-nginx
+              elif [ -f /etc/alpine-release ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apk add certbot certbot-nginx
               else
-                echo "✅ SSL certificate already exists. Skipping generation."
-              fi
-
-              echo "🔍 Testing Nginx configuration before restart..."
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S nginx -t
-
-              if [ $? -eq 0 ]; then
-                echo "✅ Nginx configuration is valid. Restarting..."
-                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl restart nginx
-              else
-                echo "❌ Nginx configuration has errors. Fix required!"
+                echo "❌ Unsupported OS. Certbot installation failed."
                 exit 1
               fi
 
-              echo "✅ Deployment & SSL Setup Successful!"
+              # Generate SSL certificate
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S certbot --nginx -d gstunc.live --non-interactive --agree-tos -m admin@gstunc.live --redirect
+
+              echo "✅ SSL certificate successfully generated!"
+            else
+              echo "✅ SSL certificate already exists. Skipping generation."
+            fi
+
+            echo "🔍 Checking if port 80 is already in use..."
+            USED_PORT_80=$(sudo lsof -t -i:80)
+
+            if [ ! -z "$USED_PORT_80" ]; then
+              echo "⚠️ Port 80 is occupied. Killing process $USED_PORT_80..."
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S kill -9 $USED_PORT_80
+            else
+              echo "✅ Port 80 is free."
+            fi
+
+            echo "🔍 Testing Nginx configuration before restart..."
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S nginx -t
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Nginx configuration is valid. Restarting..."
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl restart nginx
+            else
+              echo "❌ Nginx configuration has errors. Fix required!"
+              exit 1
+            fi
+
+            echo "✅ Deployment & SSL Setup Successful!"
