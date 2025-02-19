@@ -79,6 +79,42 @@ jobs:
               echo "✅ No running Nginx container found."
             fi
 
+            echo "🔍 Stopping any process using port 80 (to prevent conflicts)..."
+            USED_PORT_80=$(echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S lsof -t -i:80)
+
+            if [ ! -z "$USED_PORT_80" ]; then
+              echo "⚠️ Port 80 is occupied by process $USED_PORT_80. Stopping it..."
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S kill -9 $USED_PORT_80
+            else
+              echo "✅ Port 80 is free."
+            fi
+
+            echo "🔍 Checking if Apache is installed and running..."
+            if command -v apache2ctl &> /dev/null; then
+              echo "⚠️ Apache is installed! Stopping Apache..."
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl stop apache2
+              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl disable apache2
+              echo "✅ Apache stopped and disabled."
+            fi
+
+            echo "🛑 Stopping Nginx before requesting SSL certificate..."
+            echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S systemctl stop nginx
+
+            echo "🔍 Installing lsof if not installed..."
+            if ! command -v lsof &> /dev/null; then
+              if [ -f /etc/debian_version ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt update
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apt install -y lsof
+              elif [ -f /etc/redhat-release ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S dnf install -y lsof
+              elif [ -f /etc/alpine-release ]; then
+                echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S apk add lsof
+              else
+                echo "❌ Unsupported OS. lsof installation failed."
+                exit 1
+              fi
+            fi
+
             echo "🔍 Checking if SSL is already installed for Nginx..."
             if [ ! -f /etc/letsencrypt/live/gstunc.live/fullchain.pem ]; then
               echo "⚠️ SSL certificate not found! Installing Certbot and generating SSL..."
@@ -103,16 +139,6 @@ jobs:
               echo "✅ SSL certificate successfully generated!"
             else
               echo "✅ SSL certificate already exists. Skipping generation."
-            fi
-
-            echo "🔍 Checking if port 80 is occupied before restarting Nginx..."
-            USED_PORT_80=$(sudo lsof -t -i:80)
-
-            if [ ! -z "$USED_PORT_80" ]; then
-              echo "⚠️ Port 80 is occupied. Killing process $USED_PORT_80..."
-              echo "${{ secrets.SERVER_SUDO_PASSWORD }}" | sudo -S kill -9 $USED_PORT_80
-            else
-              echo "✅ Port 80 is free."
             fi
 
             echo "🔍 Testing Nginx configuration before restart..."
