@@ -1,9 +1,10 @@
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
-
+  const url = new URL(request.url);
+  const shop = url.searchParams.get("shop");
   if (!session) {
     throw new Response("Unauthorized", { status: 401 });
   }
@@ -22,6 +23,8 @@ export const loader = async ({ request }) => {
   } else {
     console.log("✅ Install API Called Successfully");
   }
-
-  return json({ success: true, message: "Authentication successful" });
+  return redirect(
+    `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE}`,
+  );
+  // return json({ success: true, message: "Authentication successful" });
 };

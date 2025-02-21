@@ -1,33 +1,23 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "65b1344df049d7c1a7a88a605a587a0c"
-application_url = "https://uganda-excluded-video-difficulty.trycloudflare.com"
+application_url = "https://gstunc.live/"
 embedded = true
 name = "shipping-protection"
 handle = "shipping-protection-37"
 
-[build]
-include_config_on_deploy = true
-dev_store_url = "apptest2395.myshopify.com"
-automatically_update_urls_on_dev = true
-
 [webhooks]
 api_version = "2025-01"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
 [auth]
 redirect_urls = [
-  "https://uganda-excluded-video-difficulty.trycloudflare.com/auth/callback",
-  "https://uganda-excluded-video-difficulty.trycloudflare.com/auth/shopify/callback",
-  "https://uganda-excluded-video-difficulty.trycloudflare.com/api/auth/callback"
+  "https://gstunc.live/auth/callback",
+  "https://gstunc.live/auth/shopify/callback",
+  "https://gstunc.live/api/auth/callback"
 ]
 
 [pos]
-embedded = false
+embedded = true
+
+[build]
+include_config_on_deploy = true

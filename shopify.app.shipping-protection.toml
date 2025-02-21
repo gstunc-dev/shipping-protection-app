@@ -1,15 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "f6fdb2043edc446641f6bce03dae17d9"
-application_url = "https://segments-hydraulic-lithuania-baseball.trycloudflare.com"
+application_url = "https://gstunc.live"
 embedded = true
 name = "shipping-protection"
 handle = "shipping-protection-38"
-
-[build]
-automatically_update_urls_on_dev = true
-dev_store_url = "shipteststore4395.myshopify.com"
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2025-01"
@@ -20,10 +15,13 @@ scopes = "read_checkouts,read_products,read_script_tags,write_checkouts,write_pr
 
 [auth]
 redirect_urls = [
-  "https://segments-hydraulic-lithuania-baseball.trycloudflare.com/auth/callback",
-  "https://segments-hydraulic-lithuania-baseball.trycloudflare.com/auth/shopify/callback",
-  "https://segments-hydraulic-lithuania-baseball.trycloudflare.com/api/auth/callback"
+  "https://gstunc.live/auth/callback",
+  "https://gstunc.live/auth/shopify/callback",
+  "https://gstunc.live/api/auth/callback"
 ]
 
 [pos]
 embedded = false
+
+[build]
+include_config_on_deploy = true
