@@ -1,10 +1,13 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "65b1344df049d7c1a7a88a605a587a0c"
-application_url = "https://gstunc.live/"
+client_id = "98021139146fc873cea409ca67eb8a09"
+application_url = "https://gstunc.live"
 embedded = true
-name = "shipping-protection"
-handle = "shipping-protection-38"
+name = "shipping-protection-2"
+handle = "shipping-protection-32"
+
+[build]
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2025-01"
@@ -13,16 +16,8 @@ api_version = "2025-01"
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_checkouts,read_products,read_script_tags,write_checkouts,write_products,write_script_tags"
 
-
 [auth]
-redirect_urls = [
-  "https://gstunc.live/auth/callback",
-  "https://gstunc.live/auth/shopify/callback",
-  "https://gstunc.live/api/auth/callback"
-]
+redirect_urls = [ "https://gstunc.live/api/auth" ]
 
 [pos]
-embedded = true
-
-[build]
-include_config_on_deploy = true
+embedded = false

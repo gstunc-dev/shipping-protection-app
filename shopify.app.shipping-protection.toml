@@ -25,3 +25,5 @@ embedded = false
 
 [build]
 include_config_on_deploy = true
+dev_store_url = "shipteststore4395.myshopify.com"
+automatically_update_urls_on_dev = false
