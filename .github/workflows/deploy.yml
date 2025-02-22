@@ -80,7 +80,7 @@ jobs:
             echo "🛠️ Rebuilding and Restarting all services..."
             docker compose  build web --no-deps --no-cache
 
-            docker compose up -d web
+            docker compose restart web
 
             echo "✅ Deployment Successful!"
 
