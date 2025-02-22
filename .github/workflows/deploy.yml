@@ -66,22 +66,21 @@ jobs:
             echo "🚀 Starting Deployment on Server..."
 
             echo "📂 Ensuring the deployment directory exists..."
-            mkdir -p ~/remix-app
+            mkdir -p ~/app-remix/web
 
             echo "🔄 Navigating to the deployment directory..."
-            cd ~/remix-app
-
-            echo "🛑 Stopping existing containers..."
-            docker compose down --remove-orphans
+            cd ~/app-remix/web
 
             echo "📂 Removing old files (if any)..."
-            rm -rf ~/remix-app/*
+            rm -rf ~/app-remix/web/*
 
             echo "📦 Extracting new deployment files into ~/remix-app..."
-            tar -xzf ~/remix-app.tar.gz -C ~/remix-app --strip-components=1
+            tar -xzf ~/remix-app.tar.gz -C ~/app-remix/web --strip-components=1
 
             echo "🛠️ Rebuilding and Restarting all services..."
-            docker compose up -d --build --remove-orphans
+            docker compose  build web --no-deps --no-cache
+
+            docker compose up -d web
 
             echo "✅ Deployment Successful!"
 
