@@ -4,33 +4,9 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useNavigate, // Import useNavigate
 } from "@remix-run/react";
-import { useEffect } from "react"; // Import useEffect
-// import { getSessionToken } from "@shopify/app-bridge-utils"; // Import getSessionToken
-import { useAppBridge, useSessionToken } from "@shopify/app-bridge-react"; // Import useAppBridge
-// import { useSessionToken } from "@shopify/app-bridge-react";
+
 export default function App() {
-  const navigate = useNavigate(); // Initialize useNavigate
-  const app = useAppBridge(); // Initialize useAppBridge
-  const getSessionToken = useSessionToken();
-  useEffect(() => {
-    async function initializeAppBridge() {
-      if (!app) return; // Check if app bridge is initialized
-
-      app.subscribe("APP::RELOAD", async () => {
-        const sessionToken = await getSessionToken(app);
-        if (sessionToken) {
-          window.location.href = `${window.location.origin}${window.location.pathname}?shopify-reload=${encodeURIComponent(sessionToken)}`;
-        } else {
-          navigate("."); // Fallback navigation
-        }
-      });
-    }
-
-    initializeAppBridge();
-  }, [app, navigate]); // Add app and navigate to dependency array
-
   return (
     <html>
       <head>
@@ -52,4 +28,3 @@ export default function App() {
     </html>
   );
 }
-
