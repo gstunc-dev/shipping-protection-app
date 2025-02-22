@@ -7,7 +7,7 @@ import {
   useNavigate, // Import useNavigate
 } from "@remix-run/react";
 import { useEffect } from "react"; // Import useEffect
-import { getSessionToken } from "@shopify/app-bridge-utils"; // Import getSessionToken
+// import { getSessionToken } from "@shopify/app-bridge-utils"; // Import getSessionToken
 import { useAppBridge } from "@shopify/app-bridge-react"; // Import useAppBridge
 
 export default function App() {
@@ -19,12 +19,12 @@ export default function App() {
       if (!app) return; // Check if app bridge is initialized
 
       app.subscribe("APP::RELOAD", async () => {
-        const sessionToken = await getSessionToken(app);
-        if (sessionToken) {
-          window.location.href = `${window.location.origin}${window.location.pathname}?shopify-reload=${encodeURIComponent(sessionToken)}`;
-        } else {
-          navigate("."); // Fallback navigation
-        }
+        // const sessionToken = await getSessionToken(app);
+        // if (sessionToken) {
+        window.location.href = `${window.location.origin}${window.location.pathname}?shopify-reload=${encodeURIComponent(sessionToken)}`;
+        // } else {
+        //   navigate("."); // Fallback navigation
+        // }
       });
     }
 
