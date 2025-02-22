@@ -3,7 +3,7 @@ version: "3.8"
 services:
   web:
     image: remix-app:latest  # Use latest built image
-    build: ./web  # Ensure the app is rebuilt
+    build: .  # Ensure the app is rebuilt
     ports:
       - "3000:3000"
     env_file:
