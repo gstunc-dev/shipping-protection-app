@@ -78,9 +78,9 @@ jobs:
             tar -xzf ~/remix-app.tar.gz -C ~/app-remix/web --strip-components=1
 
             echo "🛠️ Rebuilding and Restarting all services..."
-            docker compose  build web --no-deps --no-cache
+            docker compose  build web --no-cache
 
-            docker compose restart web
+            docker compose restart web --no-deps
 
             echo "✅ Deployment Successful!"
 
