@@ -1,0 +1,35 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "c7556509a952d88aaa4d76b713c95d35"
+application_url = "https://testimonials-calls-deleted-holiday.trycloudflare.com"
+embedded = true
+name = "GuardShip Shipping Protection"
+handle = "insurify-1"
+
+[webhooks]
+api_version = "2024-07"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhook/customers-data-request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhook/customers-redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhook/shop-redact"
+  compliance_topics = [ "shop/redact" ]
+
+[auth]
+redirect_urls = [
+  "https://testimonials-calls-deleted-holiday.trycloudflare.com/auth/callback",
+  "https://testimonials-calls-deleted-holiday.trycloudflare.com/auth/shopify/callback",
+  "https://testimonials-calls-deleted-holiday.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = true

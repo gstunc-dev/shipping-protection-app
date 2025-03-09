@@ -1,0 +1,1 @@
+import{j as o}from"./index-CgAaYQMV.js";import{u as s}from"./components-B63lDPfU.js";function n(){const{shop:e}=s();return o.jsxs("div",{children:[o.jsx("h1",{children:"Welcome to My Shopify App"}),o.jsxs("p",{children:["Connected shop: ",e]})]})}export{n as default};

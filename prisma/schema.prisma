@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  
+}
+
+model Session {
+  id            String    @id @default(uuid()) 
+  shop          String    
+  state         String    
+  isOnline      Boolean   @default(false)
+  scope         String?   
+  expires       DateTime?
+  accessToken   String    
+  userId        BigInt?   
+  firstName     String?   
+  lastName      String?   
+  email         String?   @unique 
+  accountOwner  Boolean   @default(false)
+  locale        String?   
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  createdAt     DateTime  @default(now()) 
+}
+
+model ProtectionFee {
+  id       String  @id @default(uuid())
+  shop     String  @unique 
+  fee      Decimal // ✅ Removed @db.Numeric(10,2), Prisma handles decimals correctly
+  minOrder Decimal @default(0) 
+  enabled  Boolean @default(true)
+  createdAt DateTime @default(now()) 
+}
+
+model Upsell {
+  id        String   @id @default(uuid())
+  shop      String   
+  name      String   
+  price     Decimal  // ✅ Removed @db.Numeric(10,2)
+  status    String   @default("active") 
+  productId String?  
+  createdAt DateTime @default(now()) 
+
+  @@unique([shop, productId]) 
+}
