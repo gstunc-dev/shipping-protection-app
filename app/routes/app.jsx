@@ -14,7 +14,7 @@ import {
   DataTable,
   Button,
 } from "@shopify/polaris";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   BarChart,
   LineChart,
@@ -120,14 +120,18 @@ export default function App() {
   const [newClaims, setNewClaims] = useState(5);
 
   // Fetch and post install API on component mount
+  const hasInstalled = useRef(false);
   useEffect(() => {
-    fetch(`/api/install`, {
-      method: "POST",
-      body:{shop: shop},
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => res.json())
-      .then((data) => console.log(data));
+    if (!hasInstalled.current) {
+      hasInstalled.current = true;
+      fetch(`/api/install`, {
+        method: "POST",
+        body: JSON.stringify({ shop }), // Fix: body should be a JSON string
+        headers: { "Content-Type": "application/json" },
+      })
+        .then((res) => res.json())
+        .then((data) => console.log(data));
+    }
   }, []);
 
   useEffect(() => {
@@ -143,150 +147,234 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <div style={containerStyle}>
         {/* Custom Sidebar */}
-        <div style={sidebarStyle}>
+        <aside
+          style={{
+            width: "250px",
+            backgroundColor: "#fff",
+            padding: "20px",
+            borderRadius: "10px",
+            boxShadow: "2px 2px 10px rgba(0, 0, 0, 0.1)",
+            position: "fixed",
+            height: "85vh",
+            margin: 10,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "22px",
+              fontWeight: "bold",
+              color: "#333",
+              marginBottom: "20px",
+            }}
+          >
+            GuardShip
+          </h2>
           <nav>
-            <ul style={{ listStyleType: "none", paddingLeft: "0" }}>
+            <ul style={{ listStyleType: "none", padding: 0, margin: 0 }}>
               <li
                 onClick={() => setActiveTab(0)}
-                className={activetab == 0 ? "active" : ""}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "background 0.3s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  backgroundColor: activetab === 0 ? "#333" : "transparent",
+                  color: activetab === 0 ? "#fff" : "#333",
+                }}
               >
-                <Link to="#" style={sidebarLinkStyle}>
-                  Dashboard
+                <Link
+                  to="#"
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  📊 Dashboard
                 </Link>
               </li>
               <li
                 onClick={() => setActiveTab(1)}
-                className={activetab == 1 ? "active" : ""}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "background 0.3s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  backgroundColor: activetab === 1 ? "#333" : "transparent",
+                  color: activetab === 1 ? "#fff" : "#333",
+                }}
               >
-                <Link to="#" style={sidebarLinkStyle}>
-                  Orders
+                <Link
+                  to="#"
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  📦 Orders
                 </Link>
               </li>
               <li
                 onClick={() => setActiveTab(2)}
-                className={activetab == 2 ? "active" : ""}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "background 0.3s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  backgroundColor: activetab === 2 ? "#333" : "transparent",
+                  color: activetab === 2 ? "#fff" : "#333",
+                }}
               >
-                <Link to="#" style={sidebarLinkStyle}>
-                  UpSells
+                <Link
+                  to="#"
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  ⚡ UpSells
                 </Link>
               </li>
             </ul>
           </nav>
-        </div>
+        </aside>
 
         {/* Content Area */}
         <div style={contentStyle}>
-          <Page title="Shipping Protection Dashboard">
-            <Layout>
-              {activetab == 0 ? (
-                <>
-                  <Layout.Section>
-                    <div style={dashboardStyle}>
-                      <Card sectioned style={statCardStyle}>
-                        <Text variant="headingMd">New Claims</Text>
-                        <Text variant="bodyMd">{newClaims}</Text>
-                      </Card>
-                      <Card sectioned style={statCardStyle}>
-                        <Text variant="headingMd">Open Claims</Text>
-                        <Text variant="bodyMd">{openClaims}</Text>
-                      </Card>
-                      <Card sectioned style={statCardStyle}>
-                        <Text variant="headingMd">Total Claims</Text>
-                        <Text variant="bodyMd">{totalOrders}</Text>
-                      </Card>
-                      <Card sectioned style={statCardStyle}>
-                        <Text variant="headingMd">Protected Orders</Text>
-                        <Text variant="bodyMd">{protectedOrders}</Text>
-                      </Card>
-                    </div>
-                  </Layout.Section>
-                  <Layout.Section>
-                    <Card
-                      title="Additional Revenue"
-                      sectioned
-                      style={graphCardStyle}
-                    >
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={analytics}>
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Line
-                            type="monotone"
-                            dataKey="totalSales"
-                            stroke="#008060"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+          {/* <Page> */}
+          <Layout
+            style={
+              {
+                // paddingLeft: 10
+              }
+            }
+          >
+            {activetab == 0 ? (
+              <>
+                <Layout.Section>
+                  <div style={dashboardStyle}>
+                    <Card sectioned style={statCardStyle}>
+                      <Text variant="headingMd">New Claims</Text>
+                      <Text variant="bodyMd">{newClaims}</Text>
                     </Card>
-                  </Layout.Section>
-                </>
-              ) : activetab == 1 ? (
+                    <Card sectioned style={statCardStyle}>
+                      <Text variant="headingMd">Open Claims</Text>
+                      <Text variant="bodyMd">{openClaims}</Text>
+                    </Card>
+                    <Card sectioned style={statCardStyle}>
+                      <Text variant="headingMd">Total Claims</Text>
+                      <Text variant="bodyMd">{totalOrders}</Text>
+                    </Card>
+                    <Card sectioned style={statCardStyle}>
+                      <Text variant="headingMd">Protected Orders</Text>
+                      <Text variant="bodyMd">{protectedOrders}</Text>
+                    </Card>
+                  </div>
+                </Layout.Section>
                 <Layout.Section>
                   <Card
-                    title="Protected Orders vs Non-Protected"
+                    title="Additional Revenue"
                     sectioned
                     style={graphCardStyle}
                   >
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={analytics}>
+                      <LineChart data={analytics}>
                         <XAxis dataKey="month" />
                         <YAxis />
                         <Tooltip />
-                        <Bar dataKey="totalOrders" fill="#FFBB28" />
-                        <Bar dataKey="totalSales" fill="#008060" />
-                      </BarChart>
+                        <Line
+                          type="monotone"
+                          dataKey="totalSales"
+                          stroke="#008060"
+                        />
+                      </LineChart>
                     </ResponsiveContainer>
                   </Card>
-                  <Layout.Section className="claims-table">
-                    <h2>Orders</h2>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Order No.</th>
-                          <th>Claim Filed</th>
-                          <th>Reason</th>
-                          <th>Tracking No.</th>
-                          <th>Issue Status</th>
-                          <th>Amount Paid</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>#-00012</td>
-                          <td>26/09/2021</td>
-                          <td>Lost</td>
-                          <td>AJKSHJU897</td>
-                          <td className="status new">New</td>
-                          <td>$0.00</td>
-                        </tr>
-                        <tr>
-                          <td>#-00012</td>
-                          <td>26/09/2021</td>
-                          <td>Broken</td>
-                          <td>AJKSHJU897</td>
-                          <td className="status in-review">In Review</td>
-                          <td>$0.00</td>
-                        </tr>
-                        <tr>
-                          <td>#-00012</td>
-                          <td>26/09/2021</td>
-                          <td>Broken</td>
-                          <td>AJKSHJU897</td>
-                          <td className="status resolved">Resolved</td>
-                          <td>$28.99</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </Layout.Section>
                 </Layout.Section>
-              ) : (
-                <Layout.Section>
-                  <Upsells/>
+              </>
+            ) : activetab == 1 ? (
+              <Layout.Section>
+                <Card
+                  title="Protected Orders vs Non-Protected"
+                  sectioned
+                  style={graphCardStyle}
+                >
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics}>
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="totalOrders" fill="#FFBB28" />
+                      <Bar dataKey="totalSales" fill="#008060" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+                <Layout.Section className="claims-table">
+                  <h2>Orders</h2>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Order No.</th>
+                        <th>Claim Filed</th>
+                        <th>Reason</th>
+                        <th>Tracking No.</th>
+                        <th>Issue Status</th>
+                        <th>Amount Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>#-00012</td>
+                        <td>26/09/2021</td>
+                        <td>Lost</td>
+                        <td>AJKSHJU897</td>
+                        <td className="status new">New</td>
+                        <td>$0.00</td>
+                      </tr>
+                      <tr>
+                        <td>#-00012</td>
+                        <td>26/09/2021</td>
+                        <td>Broken</td>
+                        <td>AJKSHJU897</td>
+                        <td className="status in-review">In Review</td>
+                        <td>$0.00</td>
+                      </tr>
+                      <tr>
+                        <td>#-00012</td>
+                        <td>26/09/2021</td>
+                        <td>Broken</td>
+                        <td>AJKSHJU897</td>
+                        <td className="status resolved">Resolved</td>
+                        <td>$28.99</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </Layout.Section>
-              )}
-            </Layout>
-          </Page>
+              </Layout.Section>
+            ) : (
+              <Layout.Section>
+                <Upsells />
+              </Layout.Section>
+            )}
+          </Layout>
+          {/* </Page> */}
         </div>
       </div>
 
