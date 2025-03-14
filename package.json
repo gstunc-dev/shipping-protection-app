@@ -2,14 +2,14 @@
   "name": "shipping-protection",
   "private": true,
   "scripts": {
-    "build": "remix vite:build",
-    "dev": "shopify app dev",
+    "build": "node init && remix vite:build",
+    "dev": "node init && shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
-    "start": "remix-serve ./build/server/index.js",
+    "start": "node init && remix-serve ./build/server/index.js",
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
@@ -41,7 +41,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.15.1",
-    "vite-tsconfig-paths": "^5.0.1"
+    "vite-tsconfig-paths": "^5.0.1",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.7.8",
