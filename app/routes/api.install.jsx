@@ -23,12 +23,11 @@ export const action = async ({ request }) => {
 
     const scriptCheckResponse = await admin.graphql(scriptCheckQuery);
     const scriptCheckData = await scriptCheckResponse.json();
-    // console.log("scriptCheckData", scriptCheckData);
 
     let existingScript = scriptCheckData?.data?.scriptTags?.edges?.find(
       (edge) => edge.node.src.includes("shipping-protection.js")
     );
-    
+
     let variantIdFromScript = existingScript?.node?.src.split("variantId=")[1];
 
     // Step 2: Check if the Shipping Protection product exists
@@ -39,6 +38,7 @@ export const action = async ({ request }) => {
             node {
               id
               title
+              handle
               variants(first: 1) {
                 edges {
                   node {
@@ -57,13 +57,15 @@ export const action = async ({ request }) => {
     const data = await response.json();
     const productEdges = data?.data?.products?.edges || [];
     let productId = productEdges?.[0]?.node?.id;
+    let productHandle = productEdges?.[0]?.node?.handle;
     let variant = productEdges?.[0]?.node?.variants?.edges?.[0]?.node;
-    console.log(variant,"varient")
     let variantId = variant?.id;
 
     // Step 3: If script tag exists but variant does not exist, delete all script tags
     if (existingScript && !variantIdFromScript) {
-      console.log("❌ Script tag exists, but no variant is associated. Deleting scripts...");
+      console.log(
+        "❌ Script tag exists, but no variant is associated. Deleting scripts..."
+      );
 
       for (const edge of scriptCheckData.data.scriptTags.edges) {
         const scriptTagId = edge.node.id;
@@ -95,6 +97,7 @@ export const action = async ({ request }) => {
             product {
               id
               title
+              handle
             }
             userErrors {
               field
@@ -105,17 +108,27 @@ export const action = async ({ request }) => {
       `;
 
       const createProductResponse = await admin.graphql(createProductMutation, {
-        variables: { input: { title: "Shipping Protection", productType: "Service", status: "ACTIVE", published: true } },
+        variables: {
+          input: {
+            title: "Shipping Protection",
+            productType: "Service",
+            status: "ACTIVE",
+            published: true,
+            descriptionHtml:
+              "<p>Protect your orders from loss, theft, and damage with our shipping protection service.</p>", // ✅ Added product description
+          },
+        },
       });
-      
+
       const createProductData = await createProductResponse.json();
       productId = createProductData?.data?.productCreate?.product?.id;
+      productHandle = createProductData?.data?.productCreate?.product?.handle; // ✅ Ensuring handle is saved correctly
       console.log("✅ Created new Shipping Protection product:", productId);
     }
 
     // Step 5: Create Variant if Not Exists
     if (!variantId) {
-      console.log("❌ No variant found. Creating a new variant...",productId);
+      console.log("❌ No variant found. Creating a new variant...", productId);
       const createVariantMutation = `
         mutation CreateProductVariant($productId: ID!,$variants: [ProductVariantsBulkInput!]!) {
           productVariantsBulkCreate(productId: $productId,variants: $variants,strategy:REMOVE_STANDALONE_VARIANT) {
@@ -140,14 +153,13 @@ export const action = async ({ request }) => {
           productId: productId, // ✅ Ensure correct product ID format
           variants: [
             {
-              "optionValues": [
-                
-              ],
-              "price": 20,"inventoryItem":{
-                "requiresShipping": false,
-                tracked: false
-              }
-            }
+              optionValues: [],
+              price: 20,
+              inventoryItem: {
+                requiresShipping: false,
+                tracked: false,
+              },
+            },
           ],
         },
       });
@@ -158,10 +170,13 @@ export const action = async ({ request }) => {
       ) {
         console.error(
           "❌ Variant Creation Error:",
-          createVariantData.data.productVariantsBulkCreate.userErrors,
+          createVariantData.data.productVariantsBulkCreate.userErrors
         );
-      
-    };
+      }
+
+      variantId =
+        createVariantData?.data?.productVariantsBulkCreate?.productVariants?.[0]
+          ?.id;
     }
 
     // Step 6: Create Shopify Script Tag
@@ -175,12 +190,12 @@ export const action = async ({ request }) => {
           }
         }
       `;
-console.log(process.env.SHOPIFY_APP_URL)
-console.log(variantId)
-
+      console.log(process.env.SHOPIFY_APP_URL);
+      console.log(variantId);
+      console.log(productHandle);
       const scriptVariables = {
         input: {
-          src: `${process.env.SHOPIFY_APP_URL}/shipping-protection.js?variantId=${variantId}`,
+          src: `${process.env.SHOPIFY_APP_URL}/shipping-protection.js?variantId=${variantId}&productHandle=${productHandle}`, // ✅ Fixed handle attachment
           displayScope: "ALL",
         },
       };
@@ -188,15 +203,17 @@ console.log(variantId)
       const scriptResponse = await admin.graphql(createScriptTagMutation, {
         variables: scriptVariables,
       });
-     const dbresponse = await table.create({
+      const dbresponse = await table.create({
         data: {
-          shop:session.shop,
-          name:"Shipping Protection",
+          shop: session.shop,
+          name: "Shipping Protection",
           price: parseFloat(20),
           productId,
+          description:
+            "Protect your orders from loss, theft, and damage with our shipping protection service",
         },
       });
-      console.log(dbresponse,"✅ ScriptTag successfully added!");
+      console.log(dbresponse, "✅ ScriptTag successfully added!");
     }
 
     return new Response("✅ Process Completed Successfully", { status: 200 });

@@ -10,97 +10,145 @@
   console.log("✅ Checking script position...");
   let shop;
 
-  function moveScriptToBody() {
-    let scriptTags = document.querySelectorAll('script[src*="shipping-protection.js"]');
-    scriptTags.forEach(scriptTag => {
-      if (scriptTag.parentNode !== document.body) {
-        console.log("🚀 Moving script to body...");
-        document.body.appendChild(scriptTag);
-      }
-      
-      const url = new URL(scriptTag.src);
-      shop = url.search.split("&")[1].split("=")[1];
-      let variantId = url.search.split("&")[0].split("=")[1].split("/")[4];
+ function moveScriptToBody() {
+   let scriptTags = document.querySelectorAll(
+     'script[src*="shipping-protection.js"]'
+   );
+   scriptTags.forEach((scriptTag) => {
+     if (scriptTag.parentNode !== document.body) {
+       console.log("🚀 Moving script to body...");
+       document.body.appendChild(scriptTag);
+     }
 
-      if (!variantId) {
-        console.error("❌ Missing SHIPPING_PROTECTION_VARIANT_ID in script URL.");
-        return;
-      }
+     const url = new URL(scriptTag.src);
+     const params = new URLSearchParams(url.search);
+     console.log(url.search.split("&")[1].split("=")[1]);
+     let variantId = url.search.split("&")[0].split("=")[1].split("/")[4];
+     let productHandle = url.search.split("&")[1].split("=")[1]; // ✅ Extracting product handle
 
-      if (window.__SHIPPING_PROTECTION_VARIANTS__.has(variantId)) {
-        console.warn("⚠️ Shipping Protection already initialized for variant", variantId);
-        return;
-      }
+     if (!variantId) {
+       console.error(
+         "❌ Missing SHIPPING_PROTECTION_VARIANT_ID in script URL."
+       );
+       return;
+     }
 
-      window.__SHIPPING_PROTECTION_VARIANTS__.add(variantId);
+     if (window.__SHIPPING_PROTECTION_VARIANTS__.has(variantId)) {
+       console.warn(
+         "⚠️ Shipping Protection already initialized for variant",
+         variantId
+       );
+       return;
+     }
 
-      fetchVariantPrice(variantId).then((variantPrice) => {
-        if (!variantPrice) {
-          console.warn("⚠️ Failed to fetch Shipping Protection variant price.");
-          return;
-        }
+     window.__SHIPPING_PROTECTION_VARIANTS__.add(variantId);
 
-        window.__SHIPPING_PROTECTION_DATA__[variantId] = parseFloat(variantPrice);
+     fetchVariantDetails(variantId, productHandle).then(
+       ({ price, name, image, description }) => {
+         if (!price) {
+           console.warn(
+             "⚠️ Failed to fetch Shipping Protection variant price."
+           );
+           return;
+         }
 
-        applyCartCtasStyle();
+         window.__SHIPPING_PROTECTION_DATA__[variantId] = {
+           price: parseFloat(price),
+           name,
+           image,
+           description,
+         };
 
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", () => runShippingProtectionScript(variantId));
-        } else {
-          runShippingProtectionScript(variantId);
-        }
-      });
-    });
-  }
+         applyCartCtasStyle();
 
-  async function fetchVariantPrice(variantId) {
-    try {
-      const response = await fetch(`/variants/${variantId}.json`);
-      const data = await response.json();
-      return data.product_variant.price;
-    } catch (error) {
-      console.error("❌ Error fetching variant price:", error);
-      return 0;
-    }
-  }
+         if (document.readyState === "loading") {
+           document.addEventListener("DOMContentLoaded", () =>
+             runShippingProtectionScript(variantId)
+           );
+         } else {
+           runShippingProtectionScript(variantId);
+         }
+       }
+     );
+   });
+ }
 
-  function applyCartCtasStyle() {
-    function setStyle() {
-      let cartCtas = document.querySelector(".cart__ctas");
-      if (cartCtas) {
-        cartCtas.style.display = "flex";
-        cartCtas.style.flexDirection = "column";
-      } else {
-        setTimeout(setStyle, 500);
-      }
-    }
+ async function fetchVariantDetails(variantId, productHandle) {
+   try {
+     // Fetch variant details
+     //  const variantResponse = await fetch(`/variants/${variantId}.json`);
+     //  const variantData = await variantResponse.json();
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", setStyle);
-    } else {
-      setStyle();
-    }
-  }
+     //  if (!variantData.product_variant) {
+     //    throw new Error("Variant data not found.");
+     //  }
 
-  function runShippingProtectionScript(variantId) {
-    console.log("✅ Running Shipping Protection Script for variant:", variantId);
+     // Fetch product details using the product ID
+     const productResponse = await fetch(`/products/${productHandle}.json`);
+     const productData = await productResponse.json();
 
-    let checkoutButton = document.querySelector(".cart__checkout, .checkout-button, button[name='checkout']");
-    if (!checkoutButton) {
-      setTimeout(() => runShippingProtectionScript(variantId), 500);
-      return;
-    }
-function injectToggleStyles() {
-        if (document.getElementById("toggle-switch-styles")) return;
+     if (!productData.product) {
+       throw new Error("Product data not found.");
+     }
 
-        let style = document.createElement("style");
-        style.id = "toggle-switch-styles";
-        style.innerHTML = `
+     const productName = productData.product.title;
+     const price = productData.product.variants[0].price;
+     const productImage =
+       productData.product.images.length > 0
+         ? productData.product.images[0].src
+         : "";
+     const productDescription = productData.product.body_html;
+     return {
+       price: parseFloat(price),
+       name: productName,
+       image: productImage,
+       description: productDescription,
+     };
+   } catch (error) {
+     console.error("❌ Error fetching variant details:", error);
+     return { price: 0, name: "Unknown Product", image: "" };
+   }
+ }
+
+ function applyCartCtasStyle() {
+   function setStyle() {
+     let cartCtas = document.querySelector(".cart__ctas");
+     if (cartCtas) {
+       cartCtas.style.display = "flex";
+       cartCtas.style.flexDirection = "column";
+     } else {
+       setTimeout(setStyle, 500);
+     }
+   }
+
+   if (document.readyState === "loading") {
+     document.addEventListener("DOMContentLoaded", setStyle);
+   } else {
+     setStyle();
+   }
+ }
+
+ function runShippingProtectionScript(variantId) {
+   console.log("✅ Running Shipping Protection Script for variant:", variantId);
+
+   let checkoutButton = document.querySelector(
+     ".cart__checkout, .checkout-button, button[name='checkout']"
+   );
+   if (!checkoutButton) {
+     setTimeout(() => runShippingProtectionScript(variantId), 500);
+     return;
+   }
+   function injectToggleStyles() {
+     if (document.getElementById("toggle-switch-styles")) return;
+
+     let style = document.createElement("style");
+     style.id = "toggle-switch-styles";
+     style.innerHTML = `
             .switch {
               position: relative;
               display: inline-block;
-              width: 60px;
-              height: 34px;
+              width: 51px;
+              height: 25px;
             }
 
             .switch input {
@@ -124,21 +172,21 @@ function injectToggleStyles() {
             .slider:before {
               position: absolute;
               content: "";
-              height: 26px;
-              width: 26px;
-              left: 4px;
-              bottom: 4px;
+              height: 19px;
+              width: 19px;
+              left: 3px;
+              bottom: 3px;
               background-color: white;
               -webkit-transition: .4s;
               transition: .4s;
             }
 
             input:checked + .slider {
-              background-color: #2196F3;
+              background-color: #008000;
             }
 
             input:focus + .slider {
-              box-shadow: 0 0 1px #2196F3;
+              box-shadow: 0 0 1px #008000;
             }
 
             input:checked + .slider:before {
@@ -156,59 +204,83 @@ function injectToggleStyles() {
               border-radius: 50%;
             }
         `;
-        document.head.appendChild(style);
-    }
+     document.head.appendChild(style);
+   }
 
-    injectToggleStyles();
-    let price = window.__SHIPPING_PROTECTION_DATA__[variantId] || 0;
+   injectToggleStyles();
+   let price = window.__SHIPPING_PROTECTION_DATA__[variantId].price || 0;
+   let name = window.__SHIPPING_PROTECTION_DATA__[variantId].name;
+   let image = window.__SHIPPING_PROTECTION_DATA__[variantId].image;
+   let description = window.__SHIPPING_PROTECTION_DATA__[variantId].description;
+   let container = document.createElement("div");
+   container.id = `shipping-protection-container-${variantId}`;
+   container.style.display = "flex";
+   container.style.justifyContent = "space-between";
+   container.style.alignItems = "center";
+   container.style.padding = "12px";
+   container.style.border = "1px solid #ddd";
+   container.style.borderRadius = "8px";
+   container.style.marginBottom = "15px";
+   container.style.background = "#f8f8f8";
+   let productImage = document.createElement("img");
+   productImage.src = image;
+   productImage.alt = name;
+   productImage.style.width = "60px"; // Adjust size as needed
+   productImage.style.height = "60px";
+   productImage.style.borderRadius = "5px";
+   productImage.style.marginRight = "10px";
+   let textContainer = document.createElement("div");
+   textContainer.style.display = "flex";
+   textContainer.style.flexDirection = "column";
+   textContainer.style.textAlign = "left";
+   textContainer.style.width = "243px";
 
-    let container = document.createElement("div");
-    container.id = `shipping-protection-container-${variantId}`;
-    container.style.display = "flex";
-    container.style.justifyContent = "space-between";
-    container.style.alignItems = "center";
-    container.style.padding = "12px";
-    container.style.border = "1px solid #ddd";
-    container.style.borderRadius = "8px";
-    container.style.marginBottom = "15px";
-    container.style.background = "#f8f8f8";
+   let label = document.createElement("label");
+   label.innerHTML = `<b>${name}</b> for <b>$${price}</b>`;
+   label.style.fontSize = "14px";
 
-    let label = document.createElement("label");
-    label.innerHTML = `Add Shipping Protection for <b>$${price.toFixed(2)}</b>`;
-    label.style.flex = "1";
+   let descriptionElement = document.createElement("p");
+   descriptionElement.innerHTML = description;
+   descriptionElement.style.fontSize = "12px";
+   descriptionElement.style.color = "#555";
+   descriptionElement.style.margin = 0;
 
-    let toggleWrapper = document.createElement("label");
-    toggleWrapper.classList.add("switch");
+   textContainer.appendChild(label);
+   textContainer.appendChild(descriptionElement);
+   let toggleWrapper = document.createElement("label");
+   toggleWrapper.classList.add("switch");
 
-    let toggleInput = document.createElement("input");
-    toggleInput.type = "checkbox";
-    toggleInput.id = `shipping-protection-toggle-${variantId}`;
+   let toggleInput = document.createElement("input");
+   toggleInput.type = "checkbox";
+   toggleInput.id = `shipping-protection-toggle-${variantId}`;
 
-    let toggleSlider = document.createElement("span");
-    toggleSlider.classList.add("slider", "round");
+   let toggleSlider = document.createElement("span");
+   toggleSlider.classList.add("slider", "round");
 
-    toggleWrapper.appendChild(toggleInput);
-    toggleWrapper.appendChild(toggleSlider);
+   toggleWrapper.appendChild(toggleInput);
+   toggleWrapper.appendChild(toggleSlider);
 
-    fetch("/cart.js")
-      .then(res => res.json())
-      .then(cart => {
-        let protectionItem = cart.items.find(item => item.variant_id == variantId);
-        toggleInput.checked = !!protectionItem;
-      });
+   fetch("/cart.js")
+     .then((res) => res.json())
+     .then((cart) => {
+       let protectionItem = cart.items.find(
+         (item) => item.variant_id == variantId
+       );
+       toggleInput.checked = !!protectionItem;
+     });
 
-    toggleInput.addEventListener("change", function () {
-      if (toggleInput.checked) {
-        addProtectionFee(variantId);
-      } else {
-        removeProtectionFee(variantId);
-      }
-    });
-
-    container.appendChild(label);
-    container.appendChild(toggleWrapper);
-    checkoutButton.parentNode.insertBefore(container, checkoutButton);
-  }
+   toggleInput.addEventListener("change", function () {
+     if (toggleInput.checked) {
+       addProtectionFee(variantId);
+     } else {
+       removeProtectionFee(variantId);
+     }
+   });
+   container.appendChild(productImage);
+   container.appendChild(textContainer);
+   container.appendChild(toggleWrapper);
+   checkoutButton.parentNode.insertBefore(container, checkoutButton);
+ }
 
   function addProtectionFee(variantId) {
     let price = window.__SHIPPING_PROTECTION_DATA__[variantId] || 0;

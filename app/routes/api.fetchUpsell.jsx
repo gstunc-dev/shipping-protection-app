@@ -11,7 +11,7 @@ export async function loader({ request }) {
     // Step 2: Fetch Local Upsells (Database)
     const localUpsells = await prisma.upsell.findMany({
       where: { shop },
-      select: { id: true, name: true, price: true },
+      select: { id: true, name: true, price: true, imageUrl: true },
     });
 
     console.log(`📌 Found ${localUpsells.length} upsells in database for shop: ${shop}`);

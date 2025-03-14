@@ -47,6 +47,8 @@ model Upsell {
   status    String   @default("active") 
   productId String?  
   createdAt DateTime @default(now()) 
+  imageUrl  String?
+  description String?
 
   @@unique([shop, productId]) 
 }

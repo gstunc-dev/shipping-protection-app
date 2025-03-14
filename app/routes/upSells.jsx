@@ -1,16 +1,31 @@
 import { useEffect, useState, useCallback } from "react";
-import { Card, TextField, Button, List, Text, Frame, Toast } from "@shopify/polaris";
+import {
+  Card,
+  TextField,
+  Button,
+  List,
+  Text,
+  Frame,
+  Toast,
+  DataTable,
+} from "@shopify/polaris";
 
 export default function Upsells() {
   const [upsells, setUpsells] = useState([]);
-  const [newUpsell, setNewUpsell] = useState({ name: "", price: "" });
+  const [currentUpsell, setCurrentUpsell] = useState(null); // For editing
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    description: "", // Added description field
+    image: null,
+  });
   const [showForm, setShowForm] = useState(false);
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((message, error = false) => {
     setToast({ message, error });
   }, []);
-
+  const [add, setAdd] = useState(false);
   useEffect(() => {
     const fetchUpsells = async () => {
       try {
@@ -29,127 +44,193 @@ export default function Upsells() {
     fetchUpsells();
   }, [showToast]);
 
-  const addUpsell = async () => {
-    if (!newUpsell.name || !newUpsell.price) {
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    setFormData((prev) => ({ ...prev, image: file }));
+  };
+
+  const handleEdit = (upsell) => {
+    setCurrentUpsell(upsell);
+    setFormData({
+      name: upsell.name,
+      price: upsell.price,
+      description: upsell.description || "", // Set description when editing
+      image: null,
+    });
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.price || !formData.description) {
       showToast("Please fill in all fields", true);
       return;
     }
-  
-    try {
-      const response = await fetch("/api/addUpsell", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUpsell),
-      });
-  
-      const data = await response.json();
-console.log(data)
-      if (data.success && data.productId) {
-        setUpsells((prevUpsells) => [
-          ...prevUpsells,
-          { id: data.productId, name: newUpsell.name, price: newUpsell.price, status: "active" },
-        ]);
-        setNewUpsell({ name: "", price: "" });
-        setShowForm(false);
-        showToast(data.message || "Upsell added successfully ✅");
-      } else {
-        showToast(data.message || "Failed to add upsell ❌", true);
-      }
-    } catch (error) {
-      showToast(error.message || "An error occurred while adding the upsell ❌", true);
-    }
-  };
-  
-  
 
-  const toggleStatus = async (id) => {
+    const form = new FormData();
+    form.append("name", formData.name);
+    form.append("price", formData.price);
+    form.append("description", formData.description);
+    if (formData.image) {
+      form.append("image", formData.image);
+    }
+
     try {
-      const updatedUpsells = upsells.map((upsell) =>
-        upsell.id === id
-          ? { ...upsell, status: upsell.status === "active" ? "inactive" : "active" }
-          : upsell
+      const response = await fetch(
+        currentUpsell
+          ? `/api/updateUpsell?upsellid=${currentUpsell.id}`
+          : "/api/addUpsell",
+        {
+          method: currentUpsell ? "PUT" : "POST",
+          body: form,
+        }
       );
-      setUpsells(updatedUpsells);
-      
-      const response = await fetch("/api/toggleUpsell", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
 
       const data = await response.json();
       if (data.success) {
-        showToast("Upsell status updated");
+        setUpsells((prevUpsells) => {
+          if (currentUpsell) {
+            return prevUpsells.map((u) =>
+              u.id === currentUpsell.id
+                ? {
+                    ...u,
+                    name: formData.name,
+                    price: formData.price,
+                    description: formData.description,
+                    imageUrl: data.imageUrl || u.imageUrl,
+                  }
+                : u
+            );
+          } else {
+            return [
+              ...prevUpsells,
+              {
+                id: data.productId,
+                name: formData.name,
+                price: formData.price,
+                description: formData.description,
+                imageUrl: data.imageUrl,
+                status: "active",
+              },
+            ];
+          }
+        });
+
+        setCurrentUpsell(null);
+        setFormData({ name: "", price: "", description: "", image: null });
+        setShowForm(false);
+        showToast(
+          data.message ||
+            (currentUpsell ? "Upsell updated ✅" : "Upsell added ✅")
+        );
       } else {
-        showToast("Failed to update status", true);
+        showToast(data.message || "Failed to save upsell ❌", true);
       }
     } catch (error) {
-      showToast("Error updating status", true);
+      showToast(error.message || "An error occurred ❌", true);
     }
   };
-
+  const rows = upsells.map((upsell) => [
+    <img
+      src={upsell.imageUrl}
+      alt={upsell.name}
+      width="50"
+      style={{ borderRadius: "5px" }}
+    />,
+    upsell.name,
+    `$${upsell.price}`,
+    upsell.description, // Display description in table
+    <Button onClick={() => handleEdit(upsell)}>Edit</Button>,
+  ]);
   return (
     <Frame>
       <Card sectioned>
-        <Text variant="headingMd" as="h2">Add Upsells</Text>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "Show Add Form"}
-        </Button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
+        >
+          <Text variant="headingMd" as="h2">
+            {currentUpsell ? "Edit Upsell" : "Add Upsells"}
+          </Text>
+          <Button
+            onClick={() => {
+              setShowForm(!showForm);
+              setCurrentUpsell(null);
+              setFormData({
+                name: "",
+                price: "",
+                description: "",
+                image: null,
+              });
+            }}
+          >
+            {showForm
+              ? "Cancel"
+              : currentUpsell
+                ? "Edit Upsell"
+                : "Add New Upsell"}
+          </Button>
+        </div>
         {showForm && (
-          <div style={{ display: "flex", gap: "10px", marginBottom: "20px", marginTop: "10px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              marginBottom: "20px",
+              marginTop: "10px",
+              boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+              padding: 20,
+              borderRadius: 10,
+            }}
+          >
             <TextField
               label="Upsell Name"
-              value={newUpsell.name}
-              onChange={(value) => setNewUpsell({ ...newUpsell, name: value })}
+              value={formData.name}
+              disabled={currentUpsell}
+              onChange={(value) => setFormData({ ...formData, name: value })}
               autoComplete="off"
             />
             <TextField
               label="Price"
               type="number"
-              value={newUpsell.price}
-              onChange={(value) => setNewUpsell({ ...newUpsell, price: value })}
+              value={formData.price}
+              onChange={(value) => setFormData({ ...formData, price: value })}
               autoComplete="off"
             />
-            <Button primary onClick={addUpsell}>Add Upsell</Button>
+            <TextField
+              label="Description"
+              value={formData.description}
+              onChange={(value) =>
+                setFormData({ ...formData, description: value })
+              }
+              autoComplete="off"
+              multiline
+            />
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            <Button primary onClick={handleSave}>
+              {currentUpsell ? "Update Upsell" : "Add Upsell"}
+            </Button>
           </div>
         )}
-        <div>
-          <List>
-            {upsells.map((upsell) => (
-              <List.Item key={upsell.id}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "10px",
-                    background: "#f9f9f9",
-                    borderRadius: "8px",
-                    marginBottom: "10px",
-                    boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  <Text variant="bodyMd" as="p" style={{ fontWeight: "bold" }}>
-                    {upsell.name}
-                  </Text>
-                  <Text variant="bodyMd" as="p" style={{ color: "#5c6ac4" }}>
-                    ${upsell.price}
-                  </Text>
-                  <Button
-                    onClick={() => toggleStatus(upsell.id)}
-                    destructive={upsell.status === "inactive"}
-                    primary={upsell.status === "active"}
-                  >
-                    {upsell.status === "active" ? "Deactivate" : "Activate"}
-                  </Button>
-                </div>
-              </List.Item>
-            ))}
-          </List>
-        </div>
+
+        <Card sectioned>
+          <DataTable
+            columnContentTypes={["text", "text", "text", "text", "text"]}
+            headings={["Image", "Name", "Price", "Description", "Actions"]}
+            rows={rows}
+          />
+        </Card>
       </Card>
+
       {toast && (
-        <Toast content={toast.message} error={toast.error} onDismiss={() => setToast(null)} />
+        <Toast
+          content={toast.message}
+          error={toast.error}
+          onDismiss={() => setToast(null)}
+        />
       )}
     </Frame>
   );
